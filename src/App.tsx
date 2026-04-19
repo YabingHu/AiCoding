@@ -1,25 +1,50 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DialogueScene } from "./components/DialogueScene";
 import { MemoryLockScreen } from "./components/MemoryLockScreen";
 import { SidebarPanel } from "./components/SidebarPanel";
 import { prologue } from "./content/prologue";
+import { loadGameState, saveGameState } from "./lib/storage";
 import {
   chooseOption,
   createGameState,
   getCurrentScene,
   lockMemory,
 } from "./lib/storyEngine";
+import { GameState, StoryScene } from "./types/story";
+
+function createFreshGameState(): GameState {
+  return createGameState();
+}
+
+function getResolvedGameState(state: GameState | null): GameState {
+  if (state && getCurrentScene(prologue, state)) {
+    return state;
+  }
+
+  return createFreshGameState();
+}
+
+function getResolvedScene(state: GameState): StoryScene {
+  return getCurrentScene(prologue, state) ?? prologue.scenes[prologue.startSceneId];
+}
 
 function App() {
-  const [gameState, setGameState] = useState(() => createGameState());
+  const [gameState, setGameState] = useState(() =>
+    getResolvedGameState(loadGameState()),
+  );
   const currentScene = useMemo(
-    () => getCurrentScene(prologue, gameState),
+    () => getResolvedScene(gameState),
     [gameState],
   );
 
-  if (!currentScene) {
-    return null;
-  }
+  useEffect(() => {
+    if (!getCurrentScene(prologue, gameState)) {
+      setGameState(createFreshGameState());
+      return;
+    }
+
+    saveGameState(gameState);
+  }, [gameState]);
 
   return (
     <main className="app-shell">

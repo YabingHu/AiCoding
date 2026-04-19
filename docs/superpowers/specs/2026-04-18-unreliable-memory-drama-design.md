@@ -243,3 +243,10 @@ This scope is enough to express the core mechanic clearly without requiring an u
 ## Summary
 
 The recommended game is a browser-first psychological visual novel about unstable recollection over several days or weeks. Its distinctive mechanic is that the player not only chooses what to do, but also chooses what they believe happened. The resulting design centers on scene interpretation, memory locking, contradiction, and the social cost of maintaining a fragile reality.
+
+## Local Prototype Notes
+
+- Install dependencies with `npm install`
+- Start the dev server with `npm run dev`
+- Run tests with `npm test`
+- Build the prototype with `npm run build`

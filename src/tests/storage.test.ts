@@ -26,4 +26,17 @@ describe("storage", () => {
 
     expect(loadGameState()).toEqual(savedState);
   });
+
+  it("returns null for malformed but scene-valid saved state", () => {
+    window.localStorage.setItem(
+      "shallow-truths-game-state",
+      JSON.stringify({
+        currentSceneId: "opening-conversation",
+        stats: null,
+        memoryVoice: null,
+      }),
+    );
+
+    expect(loadGameState()).toBeNull();
+  });
 });

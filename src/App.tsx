@@ -1,9 +1,25 @@
+import { useMemo, useState } from "react";
+import { DialogueScene } from "./components/DialogueScene";
+import { MemoryLockScreen } from "./components/MemoryLockScreen";
+import { SidebarPanel } from "./components/SidebarPanel";
 import { prologue } from "./content/prologue";
+import {
+  chooseOption,
+  createGameState,
+  getCurrentScene,
+  lockMemory,
+} from "./lib/storyEngine";
 
 function App() {
-  const openingScene = prologue.scenes[prologue.startSceneId];
-  const openingSpeaker =
-    openingScene.type === "dialogue" ? openingScene.speaker : "Archive Log 01";
+  const [gameState, setGameState] = useState(() => createGameState());
+  const currentScene = useMemo(
+    () => getCurrentScene(prologue, gameState),
+    [gameState],
+  );
+
+  if (!currentScene) {
+    return null;
+  }
 
   return (
     <main className="app-shell">
@@ -14,14 +30,25 @@ function App() {
           <h1>Shallow Truths</h1>
         </header>
 
-        <article className="dialogue-panel" aria-label="Opening narration">
-          <p className="speaker">{openingSpeaker}</p>
-          <p className="dialogue">{openingScene.text}</p>
+        <div className="scene-content">
+          {currentScene.type === "dialogue" ? (
+            <DialogueScene
+              scene={currentScene}
+              onChooseOption={(optionId) =>
+                setGameState((state) => chooseOption(state, optionId))
+              }
+            />
+          ) : (
+            <MemoryLockScreen
+              scene={currentScene}
+              onLockMemory={(memoryVoice) =>
+                setGameState((state) => lockMemory(state, memoryVoice))
+              }
+            />
+          )}
 
-          <button className="continue-button" type="button">
-            Continue
-          </button>
-        </article>
+          <SidebarPanel state={gameState} />
+        </div>
       </section>
     </main>
   );

@@ -1,4 +1,10 @@
+import { prologue } from "./content/prologue";
+
 function App() {
+  const openingScene = prologue.scenes[prologue.startSceneId];
+  const openingSpeaker =
+    openingScene.type === "dialogue" ? openingScene.speaker : "Archive Log 01";
+
   return (
     <main className="app-shell">
       <section className="scene-frame" aria-label="Visual novel scene">
@@ -9,11 +15,8 @@ function App() {
         </header>
 
         <article className="dialogue-panel" aria-label="Opening narration">
-          <p className="speaker">Archive Log 01</p>
-          <p className="dialogue">
-            The sea keeps immaculate records. Every whisper returns eventually,
-            polished into something that sounds like memory.
-          </p>
+          <p className="speaker">{openingSpeaker}</p>
+          <p className="dialogue">{openingScene.text}</p>
 
           <button className="continue-button" type="button">
             Continue

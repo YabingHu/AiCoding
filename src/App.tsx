@@ -51,7 +51,7 @@ function App() {
       <section className="scene-frame" aria-label="Visual novel scene">
         <div className="scene-backdrop" aria-hidden="true" />
         <header className="title-lockup">
-          <p className="kicker">Interactive prologue</p>
+          <p className="kicker">Roommate Memory Chapter</p>
           <h1>Shallow Truths</h1>
         </header>
 

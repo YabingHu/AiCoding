@@ -2,9 +2,11 @@ import {
   DialogueOptionId,
   GameState,
   MemoryVoice,
+  StoryEffect,
   StoryContent,
   StoryScene,
 } from "../types/story";
+import { prologue } from "../content/prologue";
 
 const initialStats = {
   credibility: 0,
@@ -13,8 +15,16 @@ const initialStats = {
 };
 
 export function createGameState(): GameState {
+  return createGameStateForContent(prologue);
+}
+
+function createGameStateForContent(
+  content: StoryContent,
+): GameState {
   return {
-    currentSceneId: "opening-conversation",
+    currentDay: 1,
+    currentSceneId: content.startSceneId,
+    lockedMemories: {},
     stats: { ...initialStats },
     memoryVoice: null,
   };
@@ -27,38 +37,97 @@ export function getCurrentScene(
   return content.scenes[state.currentSceneId];
 }
 
+function applyEffects(state: GameState, effects?: StoryEffect[]): GameState {
+  const nextState: GameState = {
+    ...state,
+    stats: { ...state.stats },
+    lockedMemories: { ...state.lockedMemories },
+  };
+
+  for (const effect of effects ?? []) {
+    switch (effect.type) {
+      case "stat":
+        nextState.stats = {
+          ...nextState.stats,
+          [effect.stat]: nextState.stats[effect.stat] + effect.amount,
+        };
+        break;
+      case "lock-memory":
+        nextState.lockedMemories = {
+          ...nextState.lockedMemories,
+          [effect.key]: effect.voice,
+        };
+        nextState.memoryVoice = effect.voice;
+        break;
+      case "set-day":
+        nextState.currentDay = effect.day;
+        break;
+      default:
+        assertNever(effect);
+    }
+  }
+
+  return nextState;
+}
+
+function assertNever(value: never): never {
+  throw new Error(`Unhandled effect type: ${JSON.stringify(value)}`);
+}
+
 export function chooseOption(
   state: GameState,
   optionId: DialogueOptionId,
+  content: StoryContent = prologue,
 ): GameState {
-  if (optionId === "deflect") {
-    return {
-      ...state,
-      currentSceneId: "memory-lock",
-      stats: {
-        ...state.stats,
-        credibility: state.stats.credibility + 1,
-        intimacy: state.stats.intimacy - 1,
-      },
-    };
+  const scene = getCurrentScene(content, state);
+
+  if (!scene) {
+    throw new Error(`Unknown scene: ${state.currentSceneId}`);
+  }
+
+  if (scene.type !== "dialogue") {
+    throw new Error(`Scene ${scene.id} does not accept dialogue choices`);
+  }
+
+  const option = scene.options.find((choice) => choice.id === optionId);
+
+  if (!option) {
+    throw new Error(
+      `Unknown dialogue option ${optionId} in scene ${scene.id}`,
+    );
   }
 
   return {
-    ...state,
-    currentSceneId: "memory-lock",
-    stats: {
-      ...state.stats,
-      intimacy: state.stats.intimacy + 1,
-      selfCoherence: state.stats.selfCoherence - 1,
-    },
+    ...applyEffects(state, option.effects),
+    currentSceneId: option.nextSceneId,
   };
 }
 
-export function lockMemory(state: GameState, memoryVoice: MemoryVoice): GameState {
+export function lockMemory(
+  state: GameState,
+  memoryVoice: MemoryVoice,
+  content: StoryContent = prologue,
+): GameState {
+  const scene = getCurrentScene(content, state);
+
+  if (!scene) {
+    throw new Error(`Unknown scene: ${state.currentSceneId}`);
+  }
+
+  if (scene.type !== "memory") {
+    throw new Error(`Scene ${scene.id} does not accept memory locks`);
+  }
+
+  const option = scene.options.find((choice) => choice.id === memoryVoice);
+
+  if (!option) {
+    throw new Error(
+      `Unknown memory option ${memoryVoice} in scene ${scene.id}`,
+    );
+  }
+
   return {
-    ...state,
-    currentSceneId:
-      memoryVoice === "i_was_calm" ? "aftermath-calm" : "aftermath-shaking",
-    memoryVoice,
+    ...applyEffects(state, option.effects),
+    currentSceneId: option.nextSceneId,
   };
 }
